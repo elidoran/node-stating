@@ -5,11 +5,11 @@
 
 Build a state machine with simple function nodes.
 
-Each node is a a function so, it's an action.
+Each node is a function so it's also an action for the "state".
 
 Each node specifies the next node, or nodes, which allows for dynamically specifying state transitions.
 
-It's a malleable state machine because it's possible to add nodes both "before" and "after" other nodes which may override a node or alter where it transitions to.
+It's a malleable state machine. Others may add new nodes at any time, and, it's also possible to add nodes both "before" and "after" other nodes which may override a node or alter where it transitions to.
 
 
 ## Install
