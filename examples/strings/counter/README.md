@@ -25,5 +25,5 @@ Shows features:
 Try providing your own input. For example:
 
 ```sh
-node examples/counter/ -- --input 'abbcccddddeeeeeffffffggggggg'
+npm run counter -- --input 'abbcccddddeeeeeffffffggggggg'
 ```
