@@ -28,7 +28,6 @@
     "prepublish": "npm run build",
     "postpublish": "npm run clean",
     "test": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test/lib",
-    "test012": "nave use 0.12.18 npm test",
     "test4": "nave use 4.8 npm test",
     "test6": "nave use 6.10 npm test",
     "test7": "nave use 7.9 npm test",
@@ -66,6 +65,6 @@
     "@flatten/array": "^1.0.1"
   },
   "engines": {
-    "node": ">=0.12"
+    "node": ">=4"
   }
 }
