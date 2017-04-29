@@ -73,7 +73,7 @@ nodes.add('report', function report(control) {
 var executor = nodes.buffers()
 
 // encode some JSON stuff into a buffer
-var buffer = Buffer.alloc(25000)
+var buffer = Buffer.alloc ? Buffer.alloc(25000) : new Buffer(25000)
 var index = 0
 var lengths = []
 
