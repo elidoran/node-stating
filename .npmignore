@@ -1,6 +1,10 @@
 *.coffee
-test/
 .DS_Store
 .git
 .gitignore
-test/blah/
+
+benchmark/
+coverage/
+docs/
+examples/
+test/
