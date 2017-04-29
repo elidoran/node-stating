@@ -1,0 +1,5 @@
+require '../../examples/strings/counter'
+require '../../examples/strings/counter-direct'
+require '../../examples/buffers/json'
+require '../../examples/transforms/math'
+# require '../../examples/objects/messages'

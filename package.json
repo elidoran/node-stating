@@ -2,7 +2,15 @@
   "name": "stating",
   "version": "0.1.0",
   "description": "Build a state machine-ish function executor",
-  "main": "lib",
+  "main": "lib/index.js",
+  "files": [
+    "lib/index.js",
+    "lib/Stating.js",
+    "lib/Control.js",
+    "lib/object-input.js",
+    "lib/buffer-input.js",
+    "lib/string-input.js"
+  ],
   "keywords": [
     "generate",
     "build",
@@ -14,11 +22,27 @@
   "author": "Eli Doran <eli+npm@elidoran.com>",
   "license": "MIT",
   "scripts": {
+    "lint": "coffeelint -f build/coffeelint.json lib",
     "build": "coffee --bare --compile lib",
-    "clean": "rm -rf lib/*.js",
+    "clean": "rm -rf ./lib/*.js",
     "prepublish": "npm run build",
     "postpublish": "npm run clean",
-    "test": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test/lib"
+    "test": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test/lib",
+    "test4": "nave use 4.8 npm test",
+    "test6": "nave use 6.10 npm test",
+    "test7": "nave use 7.9 npm test",
+    "test-all": "npm run test4 && npm run test6 && npm run test7",
+    "precoverage": "npm run clean",
+    "coverage": "istanbul cover -x 'build/**' _mocha -- --compilers coffee:coffee-script/register --require ./build/coverage.js -R spec test/lib",
+    "publish-coverage": "npm run coverage && cat coverage/lcov.info | coveralls",
+    "precoverage-lcov": "npm run clean",
+    "coverage-lcov": "istanbul cover _mocha --report lcovonly -- --compilers coffee:coffee-script/register --require ./build/coverage.js -R spec test/lib",
+    "coverage-clean": "rm -rf ./coverage",
+    "counter": "npm run build && node examples/strings/counter",
+    "counter-direct": "npm run build && node examples/strings/counter-direct",
+    "json": "npm run build && node examples/buffers/json",
+    "messages": "npm run build && node examples/objects/messages",
+    "math": "npm run build && node examples/transforms/math"
   },
   "repository": {
     "type": "git",
@@ -26,11 +50,21 @@
   },
   "bugs": "http://github.com/elidoran/node-stating/issues",
   "devDependencies": {
-    "coffee-script": "^1.11.1",
-    "mocha": "^3.1.2"
+    "@optimal/object": "^0.1.0",
+    "coffee-coverage": "^2.0.1",
+    "coffee-script": "^1.12.5",
+    "coffeelint": "^1.16.0",
+    "coveralls": "^2.13.1",
+    "fast-safe-stringify": "^1.1.13",
+    "istanbul": "^0.4.5",
+    "mocha": "^3.3.0",
+    "mocha-lcov-reporter": "^1.3.0",
+    "nave": "^2.2.3"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@flatten/array": "^1.0.1"
+  },
   "engines": {
-    "node": ">=0.12"
+    "node": ">=4"
   }
 }
