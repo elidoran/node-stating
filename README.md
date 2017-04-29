@@ -119,7 +119,7 @@ nodes.addAll({
     var ch = this.value ? this.value.ch : this.input[this.index]
 
     // count the occurrences of this character
-    for (var index = this.index ; index++ ; this.input[index] == ch)
+    for (var index = this.index ; index < this.input.length; this.input[++index] == ch)
       ;
 
     // store our value, combine with where we left off, if it exists
