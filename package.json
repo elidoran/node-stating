@@ -1,6 +1,6 @@
 {
   "name": "stating",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Build a state machine-ish function executor",
   "main": "lib/index.js",
   "files": [
