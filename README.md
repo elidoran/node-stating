@@ -2,6 +2,7 @@
 [![Build Status](https://travis-ci.org/elidoran/node-stating.svg?branch=master)](https://travis-ci.org/elidoran/node-stating)
 [![Dependency Status](https://gemnasium.com/elidoran/node-stating.png)](https://gemnasium.com/elidoran/node-stating)
 [![npm version](https://badge.fury.io/js/stating.svg)](http://badge.fury.io/js/stating)
+[![Coverage Status](https://coveralls.io/repos/github/elidoran/node-stating/badge.svg?branch=master)](https://coveralls.io/github/elidoran/node-stating?branch=master)
 
 Build a state machine with simple function nodes.
 
@@ -19,14 +20,25 @@ npm install stating --save
 ```
 
 
+## Examples
+
+See [/examples](examples) for some runnable examples.
+
+1. [strings/counter](examples/strings/counter)
+2. [strings/counter-direct](examples/strings/counter-direct)
+3. [buffers/json](examples/buffers/json)
+4. [transforms/math](examples/transforms/math)
+5. ~~[objects/messages](examples/objects/messages)~~
+
+
 ## Usage
 
 ```javascript
-// get the module, which is a builder function to build the nodes builder
+// returns a builder function
 var buildNodes = require('stating')
 
-// build a builder for use here
-  , nodes = buildNodes()
+// build a new nodes for us to configure
+var nodes = buildNodes()
 
 // add a "node", which is a function with an id
 nodes.add('some-id', function (control, context) {
@@ -34,14 +46,14 @@ nodes.add('some-id', function (control, context) {
   // do something with the @input / context.input
   // it's the object provided to process()
 
-  if // things are okay, move to the next node
+  if (/* things are okay, move to the next node */)
     control.next('next-id')
   else
     control.fail('there was a problem')
 })
 
 nodes.add('next-id', function (control, context) {
-  // do something ... and then move back to the first node
+  // do something ... and then tell it to move back to the first node
   control.next('some-id')
 })
 
@@ -63,114 +75,119 @@ nodes.start('some-id')
 
 // Alter flow with before/after nodes by specifying which nodes should
 // be targeted and which nodes should be applied. works as it reads.
-nodes.before('some id', 'another id').run('blah1', 'blah2', 'blah3')
+// simple examples, do one before, or after, the specified one:
+
+// will configure 'valid' to run before 'assign' does.
+// this means any time any node says to switch to 'assign'
+// then the 'valid' node will be run.
+nodes.before('assign').run('valid')
+
+// will configure 'some' to run after 'change'.
+// this will configure 'some' to run after the 'change' node.
+// any time any node says to run 'change' then 'some'
+// will be run after it.
+nodes.after('change').run('some')
+
+// these mean the same except they target more functions at once.
+// these are convenience functions to easily target many nodes.
+
+// this will make all three "blah" nodes run before 'id1' and 'id2'.
+// so, any time any node says to run either 'id1' or 'id2'
+// it will run all three "blah" nodes *first*.
+nodes.before('id1', 'id2').run('blah1', 'blah2', 'blah3')
+
+// same as the before, except, run them after.
 nodes.after('diff id', 'id2', 'id3').run('blah4', 'blah5', 'blah6')
 
 // A. For Object inputs:
+// create an executor prepared to process objects.
 var executor = nodes.objects()
+
+// then provide objects via process()
 executor.process({some:'input object'})
 
 // B. For String inputs:
+// create an executor prepared to process string.
 var executor = nodes.strings()
+
+// then provide strings via process()
 executor.process('some input')
 
 // C. For Transforms:
-// default transform has string input and object output
+// default transform has string input and object output.
+// so, writableObjectMode is false and,
+// readableObjectMode is true.
 var transform = nodes.transform()
 
-// control input/output with options:
-  , transform = nodes.transform({
-    // use Buffer instead of string
-    decodeStrings: true,
-    // allow string/buffer output instead
-    readableObjectMode: false
-  })
+// change from the default with options:
+var transform = nodes.transform({
+  // example of changing to string/buffer output
+  readableObjectMode: false
+
+  // example: enforce Buffer instead of string.
+  decodeStrings: true,
+})
 
 someSource.pipe(transform).pipe(someTarget);
 
-// A2 / B2  Adding event system:
-//   for these, the `control` will have an `events` property.
-//
+
+// Add an event emitter to the `control` each node
+// will receive when called.
+
 // set options' `events` to true to use the events.EventEmitter
-var options = {events:true}
+var options = { events:true }
+
 // or, set your own event emitter instance:
-  , options = { events: yourEventEmitter }
-// then create the usual executor with the options...  
-  , executor = nodes.objects(options)
-  , executor = nodes.strings(options)
-```
+var options = { events: yourEventEmitter }
 
-## Example
+// then create the usual executor with the options...
+var executor = nodes.objects(options)
+var executor = nodes.strings(options)
 
-A totally contrived example just to see some of the stuff working. It counts the repeated occurrences of characters.
 
-```javascript
-var nodes = require('stating')()
+// speed things up by using nodes directly instead of
+// referring to them via their ID's (string).
+// call direct() to replace all string references
+// with the actual nodes.
+// wait until after all nodes have been added.
+nodes.direct()
 
-nodes.addAll({
-  count: function (control) {
+// also, each node added must be wrapped with an
+// initializer function which, when called,
+// uses the `nodes` argument to get any nodes
+// it wants via ID, and then it returns the actual
+// node function which refers to nodes with the nodes
+// instead of their IDs.
+// tell add() and addAll() they're initializers
+// by specifying `true` as the third argument
+// For example:
+nodes.add('some id', function(direct) {
+  // this is the initializer accepting `direct`.
 
-    // if we don't have any more input, then wait()
-    if (this.index >= this.input.length) {
-      return control.wait()
-    }
+  // we want these two nodes:
+  var a, b
 
-    // continue where we left off, or, get the new character to count
-    var ch = this.value ? this.value.ch : this.input[this.index]
+  // get them like this:
+  // (supports transitive dependencies)
+  direct(['a', 'b'], function(nodeA, nodeB) {
+    a = nodeA
+    b = nodeB
+  })
 
-    // count the occurrences of this character
-    for (var index = this.index ; index < this.input.length; this.input[++index] == ch)
-      ;
-
-    // store our value, combine with where we left off, if it exists
-    this.value = {
-      type: ch,
-      count: this.value ? this.value.count + (index - this.index) : (index - this.index)
-    }
-
-    // if we ran into the end of the input then wait for more.
-    // otherwise, move to the 'use' node
-    if (index == this.input.length) {
-      control.wait()
-    } else {
-      control.next('use')
-    }
-  },
-
-  use: function (control) {
-
-    // use our value and then nullify it
-    if (this.value) {
-      console.log(this.value.type, '->', this.value.count)
-      this.value = null
-    }
-
-    // go back to count another character
-    control.next('count')
+  // now return the real node using both `a` and `b`
+  return function(control) {
+    if (/* something meaning do `a` */)
+      control.next(a)
+    else // otherwise `b`
+      control.next(b)
   }
-})
+}, true) // <-- means it's an initializer.
 
-var executor = nodes.strings()
-
-// provide input in parts
-executor.process('abc')
-executor.process('cddeee')
-executor.process('eefggghh')
-executor.process('hhhhh')
-
-// the same thing would happen if we passed it all as a single input:
-executor.process('abccddeeeeefggghhhhh')
-
-/* the result is the following output to the console:
-a -> 1
-b -> 1
-c -> 2
-d -> 2
-e -> 5
-f -> 1
-g -> 3
-h -> 7
-*/
+// example with addAll()
+nodes.addAll({
+  // properties are ID's and node initializers
+}, true) // <-- means they're all initializers.
 ```
 
-## MIT License
+
+## [MIT License](LICENSE)
