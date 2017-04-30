@@ -1,3 +1,10 @@
+## 0.2.1 - 2017/04/30
+
+1. update @flatten/array dep
+2. return `control` in the "executor"
+3. clarify code choosing start node in Control, and, accept it from the options
+4. reuse the `next` alias in the lower code
+
 ## 0.2.0 - 2017/04/29
 
 1. revise implementation to eliminate coffeescript splats on arguments because it's not optimizable
