@@ -62,7 +62,7 @@
     "nave": "^2.2.3"
   },
   "dependencies": {
-    "@flatten/array": "^1.0.1"
+    "@flatten/array": "^1.1.1"
   },
   "engines": {
     "node": ">=4"
