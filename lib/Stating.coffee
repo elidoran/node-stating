@@ -112,7 +112,8 @@ module.exports = class Stating
 
     @_events control, options
 
-    return process: (input, done) -> control._process input, done
+    process: (input, done) -> control._process input, done
+    control: control
 
 
   # only cares about `input`.
