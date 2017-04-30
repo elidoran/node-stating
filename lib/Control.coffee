@@ -6,8 +6,14 @@ module.exports = class Control
     # default context is an object with the input reset function
     @_context = options?.context ? Object.create options?.baseContext
 
-    # if direct then get the node otherwise store the name.
-    @_next = if options?.direct then [ stating.nodes[stating._start] ] else [ stating._start ]
+    # start may be overridden by options, otherwise get it from `stating`
+    start = options.start ? stating._start
+
+    # if direct then get the actual start node
+    start = stating.nodes[start] if options?.direct
+
+    # the queue, _next, begins with only our start node
+    @_next = [ start ]
     @_nodes = stating.nodes
 
     @_beforesAdded = []
@@ -18,6 +24,7 @@ module.exports = class Control
     @_node = null
     @_after = null
     @_failed = null
+    @waiting = null
 
 
   fail: (reason, error) ->
@@ -137,8 +144,8 @@ module.exports = class Control
       else
         @_beforesAdded.push node
         # @_next.splice @_next.length, 0, @_node.before
-        @_next.push.apply @_next, node.before
-        node = @_next[@_next.length - 1]
+        next.push.apply next, node.before
+        node = next[next.length - 1]
 
     @_node = node
     @_after = node.after
