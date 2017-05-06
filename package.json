@@ -40,7 +40,8 @@
     "coverage-clean": "rm -rf ./coverage",
     "counter": "npm run build && node examples/strings/counter",
     "counter-direct": "npm run build && node examples/strings/counter-direct",
-    "json": "npm run build && node examples/buffers/json",
+    "json-payload": "npm run build && node examples/buffers/json-payload",
+    "json": "npm run build && node examples/strings/json",
     "messages": "npm run build && node examples/objects/messages",
     "math": "npm run build && node examples/transforms/math"
   },
