@@ -29,6 +29,7 @@ See [/examples](examples) for some runnable examples.
 3. [buffers/json](examples/buffers/json)
 4. [transforms/math](examples/transforms/math)
 5. ~~[objects/messages](examples/objects/messages)~~
+6. [strings/json](examples/strings/json)
 
 
 ## Usage
@@ -188,6 +189,22 @@ nodes.addAll({
   // properties are ID's and node initializers
 }, true) // <-- means they're all initializers.
 ```
+
+
+## Future
+
+First, finalize how Stating/Control handle nodes and the internal execution queue.
+
+Then, it's all about adding builders/helpers to create the nodes supplied to a Stating instance.
+
+For example, look at the [JSON example nodes](examples/strings/json/nodes.coffee) for `true`, `false`, and `null`. All that for a static string. I'm sure I could make a builder to help make nodes like that.
+
+Also, nodes like the "element" and "element ," for reading an array, which work together as the first and the repeater, could be made via a helper by telling it what is wanted each time and what the separator is.
+
+There's more. I plan to add those later as packages in the `stating` scope.
+
+
+The initializer functions to enable "direct" use of the nodes can be a bit unwieldy for nodes which call `control.next()` with many different nodes. I'd rather something like functions have an object of the node names they use (key is the name which maps to the name) and Stating can replace the value with the actual node when using direct mode (or, always do that, and get rid of direct mode). If you have any ideas, please, feel free to create an Issue and describe it.
 
 
 ## [MIT License](LICENSE)
