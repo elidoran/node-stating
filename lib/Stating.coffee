@@ -87,6 +87,8 @@ module.exports = class Stating
       # get the node
       node = @nodes[name]
 
+      unless node? then return error: 'unknown node name', name: name
+
       # if the array exists already, splice these into the end
       array = node[which]
 
@@ -191,7 +193,14 @@ module.exports = class Stating
     for id, node of @nodes
 
       # replace initializers with the result of running them
-      if node.$IS_INIT is true then @nodes[id] = node direct
+      if node.$IS_INIT is true
+        # replace it
+        @nodes[id] = node direct
+        # remember the id
+        @nodes[id].id = id
+        # copy over the before/after node refs
+        @nodes[id].before = node.before if node.before?
+        @nodes[id].after  = node.after if node.after?
 
 
     # phase 2: provide the nodes via their callbacks
