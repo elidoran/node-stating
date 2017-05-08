@@ -1,3 +1,18 @@
+## 0.3.0 - 2017/05/07
+
+1. change context's `reset()` to `$add()` to use a less common name
+2. allow control to accept a result to stop the loop and return
+3. ensure async processing when a done callback is specified by deferring the processing via `process.nextTick()`
+4. add a `_reset()` to Control for use when a failure occurs
+5. have Control's reset try to do `context.$clear()` so it can reset itself
+6. Control's `fail()` function duplicates the context, or uses `context.$copy()` if available.
+7. Stating's `direct()` copy's the before/after arrays from their wrapping initializer function to the returned functions, and sets their `id` on them (for debugging)
+8. add a JSON parser to examples (missing Date decoding)
+9. add benchmarking setup with only a benchmark for JSON parsing using the example and a few other parser's JSON examples
+10. Control uses its own `fail()` in the two "prepareNext" implementations instead of returning them
+11. add "future" babble to README
+
+
 ## 0.2.1 - 2017/04/30
 
 1. update @flatten/array dep
