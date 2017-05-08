@@ -1,5 +1,4 @@
-defaultDone = (error, result) -> return error ? result
-
+NIL = {}
 module.exports = class Control
 
   constructor: (stating, options) ->
@@ -7,13 +6,13 @@ module.exports = class Control
     @_context = options?.context ? Object.create options?.baseContext
 
     # start may be overridden by options, otherwise get it from `stating`
-    start = options.start ? stating._start
+    @_start = options.start ? stating._start
 
     # if direct then get the actual start node
-    start = stating.nodes[start] if options?.direct
+    @_start = stating.nodes[@_start] if options?.direct
 
     # the queue, _next, begins with only our start node
-    @_next = [ start ]
+    @_next = [ @_start ]
     @_nodes = stating.nodes
 
     @_beforesAdded = []
@@ -25,13 +24,29 @@ module.exports = class Control
     @_after = null
     @_failed = null
     @waiting = null
+    @_result = null
+
+  _reset: ->
+    @_failed = null
+    @_node = null
+    @_after = null
+    @waiting = null
+    @_result = null
+    @_beforesAdded = []
+    @_next = [ @_start ]
+    @_context.$clear?()
 
 
   fail: (reason, error) ->
+    context =
+      if typeof @_context.$copy is 'function' then @_context.$copy()
+      else Object.assign {}, @_context
+
     @_failed =
       reason : reason
       node   : @_node
-      context: @_context
+      context: context
+
     if error? then @_failed.error = error
     return
 
@@ -52,56 +67,84 @@ module.exports = class Control
 
     # then do the same for the after names so they'll be done *before* the next() ones.
     if @_after?.length > 0 then next.push.apply next, @_after
-    # console.log 'control.next:', next
+
     return
 
+  wait: (info) ->
+    @waiting = info ? 'waiting'
+    return
 
-  wait: (info) -> @waiting = info ? true
-
-  # _prepareNext is assigned either _prepareByName or _prepareByNode
+  # must use separate result var because result can be `null`
+  result: (value) ->
+    @_result = value ? NIL
+    return
 
   _process: (data, done) ->
+
+    if done? then process.nextTick => @_begin data, done
+    else @_begin data, (error, result) -> error ? result
+
+  _begin: (data, done) ->
 
     if typeof data is 'function'
       done = data
       data = null
 
-    else
-      done ?= defaultDone
-
-    @_context.reset data
+    @_context.$add data
 
     loop # the main processing loop. checks if it has input then calls next
 
-      # 1. if we @_failed then tell done() and return
-      if @_failed? then return done @_failed
-
-      # 2. if we should wait for input, remove the marker and then return/done
+      # 1. if we should wait for input, remove the marker and then return/done
       if @waiting?
+        result = @waiting
         @waiting = null
-        return done()
+        return done null, result
 
-      # 3. get the next node and call it
+      # 2. if we want to return a result, remove the marker and then return/done
+      # NOTE:
+      #  this supports repeated sycnchronous calls to retrieve one value at
+      #  a time. the main goal of `stating` is processing of chunks which
+      #  can provide many values via a different outlet than the sycnchronous
+      #  return value. but, it's useful for dev/testing/perf to do this too.
+      if @_result?
+        result = if @_result is NIL then null else @_result
+        @_result = null
+        return done null, result
+
+      # 3. if we @_failed then tell done() and return
+      if @_failed?
+        result = @_failed
+        @_failed = null
+        # reset everything so we can start over.
+        @_reset()
+        # the `_failed` has the context in it for them.
+        return done result
+
+      # 4. get the next node and call it
       @_call @_prepareNext done
 
     return
 
+
   _call: (node) ->
-    try
-      # TODO: stop providing the `this` and instead do:
-      # node this, @_context
+    unless node? then return
+    try # TODO: stop providing the `this` and instead do: node this, @_context
       node.call @_context, this, @_context
     catch error
       @fail 'Caught error', error
 
-  _prepareByName: (done) ->
+  _prepareByName: ->
+
+    next = @_next
 
     # get our next node's name. don't pop() until next() is called.
-    nodeName = @_next[@_next.length - 1]
+    console.log
+    nodeName = next[next.length - 1]
     node = @_nodes[nodeName]
 
     # without a next node, send an error
-    unless node? then return done error:'Missing next node: ' + nodeName
+    # unless node? then return done {error:'Missing next node: ' + nodeName}, null
+    unless node? then return @fail 'missing next node: ' + nodeName
 
     # if the `node` has `before` nodes, then, add them to do first.
     # remember adding its 'before' names so we do it once.
@@ -113,9 +156,8 @@ module.exports = class Control
 
       else
         @_beforesAdded.push node
-        # @_next.splice @_next.length, 0, @_node.before
-        @_next.push.apply @_next, node.before
-        nodeName = @_next[@_next.length - 1]
+        next.push.apply next, node.before
+        nodeName = next[next.length - 1]
         node = @_nodes[nodeName]
 
     @_node = node
@@ -123,7 +165,7 @@ module.exports = class Control
     return node
 
 
-  _prepareByNode: (done) ->
+  _prepareByNode: ->
 
     next = @_next
 
@@ -131,7 +173,8 @@ module.exports = class Control
     node = next[next.length - 1]
 
     # without a next node, send an error
-    unless node? then return done error:'Missing next node'
+    # unless node? then return done {error:'Missing next node'}, null
+    unless node? then return @fail 'missing next node'
 
     # if the `node` has `before` nodes, then, add them to do first.
     # remember adding its 'before' names so we do it once.
