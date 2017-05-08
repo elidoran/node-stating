@@ -1,6 +1,6 @@
 # option 1: make a combined buffer
 exports.addByConcat = (input) ->
-  # console.log 'resetByConcat'
+
   @input =
     # if there's some bytes leftover in the current buffer
     if @input?.length > 0 and @index < @input.length
@@ -13,7 +13,6 @@ exports.addByConcat = (input) ->
     else input
 
   @index = 0
-  # console.log @index, @input.length
   return
 
 
