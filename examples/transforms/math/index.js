@@ -7,7 +7,9 @@ nodes.addAll({
 
   start: function start(control) {
     if (!this.input) {
-      control.wait()
+      // transform pipes to process.stdout
+      // so this will be output to the console.
+      control.wait('...wait for more input...\n')
     }
 
     else if (this.input.op) {
