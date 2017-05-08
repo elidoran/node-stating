@@ -3,10 +3,10 @@ module.exports = class Control
 
   constructor: (stating, options) ->
     # default context is an object with the input reset function
-    @_context = options?.context ? Object.create options?.baseContext
+    @_context = options?.context ? Object.create options?.baseContext ? null
 
     # start may be overridden by options, otherwise get it from `stating`
-    @_start = options.start ? stating._start
+    @_start = options?.start ? stating._start
 
     # if direct then get the actual start node
     @_start = stating.nodes[@_start] if options?.direct
@@ -25,6 +25,7 @@ module.exports = class Control
     @_failed = null
     @waiting = null
     @_result = null
+
 
   _reset: ->
     @_failed = null
@@ -122,8 +123,6 @@ module.exports = class Control
 
       # 4. get the next node and call it
       @_call @_prepareNext done
-
-    return
 
 
   _call: (node) ->
