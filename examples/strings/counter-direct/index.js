@@ -104,7 +104,7 @@ nodes.direct()
 var executor = nodes.strings({
   context: Object.create(
     { // prototype for the context has reset()
-      reset: function reset(input) {
+      $add: function $add(input) {
         this.input = input
         this.index = 0
       }
