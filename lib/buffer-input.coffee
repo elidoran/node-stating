@@ -1,5 +1,5 @@
 # option 1: make a combined buffer
-exports.resetByConcat = (input) ->
+exports.addByConcat = (input) ->
   # console.log 'resetByConcat'
   @input =
     # if there's some bytes leftover in the current buffer
@@ -18,7 +18,7 @@ exports.resetByConcat = (input) ->
 
 
 # option 2: combine via package `bl` (buffer list)
-exports.resetByBufferList = (input) ->
+exports.addByBufferList = (input) ->
 
   @input =
     # if there's some bytes leftover in the current buffer
@@ -36,6 +36,6 @@ exports.resetByBufferList = (input) ->
   return
 
 exports.baseContext =
-  reset: exports.resetByConcat
+  $add: exports.addByConcat
   input: null
   index: 0

@@ -1,5 +1,5 @@
-exports.reset = (input) -> @input = input
+exports.$add = (input) -> @input = input
 
 exports.baseContext =
-  reset: exports.reset
+  $add: exports.$add
   input: null

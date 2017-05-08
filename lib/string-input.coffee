@@ -8,7 +8,7 @@ exports.trim = (first, last) ->
   last-- while @input[last] is ' '
   @input[first..last]
 
-exports.stringInputReset = (input) ->
+exports.stringInputAdd = (input) ->
   @input =
     if @input?.length > 0 and @index < @input.length then @input[@index..] + input
     else input
@@ -16,7 +16,7 @@ exports.stringInputReset = (input) ->
   return
 
 exports.baseContext =
-  reset: exports.stringInputReset
+  $add: exports.stringInputAdd
   trim : exports.trim
   input: null
   index: 0
