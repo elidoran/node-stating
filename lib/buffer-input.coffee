@@ -23,8 +23,8 @@ exports.addByBufferList = (input) ->
     # if there's some bytes leftover in the current buffer
     if @input?.length > 0 and @index < @input.length
 
-      bl = new (reqire('bl'))
-      bl.append @input.slice index, @input.length
+      bl = new (require('bl'))
+      bl.append @input.slice @index, @input.length
       bl.append input
       bl
 
