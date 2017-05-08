@@ -1,7 +1,7 @@
 // replace with require('stating')
 var nodes = require('../../../lib/')()
 
-console.log('example strings/counter')
+console.log('example strings/counter\n-----------------------------------------------')
 
 // add our two nodes
 nodes.addAll({
@@ -72,37 +72,26 @@ nodes.start('count')
 // and use the specified context.
 // the context has a custom `reset` function,
 // and default values for the properties used.
-var executor = nodes.strings({
-  context: Object.create(
-    { // prototype for the context has reset()
-      reset: function reset(input) {
-        this.input = input
-        this.index = 0
-      },
-      trim: require('../../../lib/string-input').trim
+function prop(v, w) { return {
+  value: v, writable: w, enumerable: true, configurable: false
+}}
+
+var context = Object.create(
+  { // prototype for the context has reset()
+    $add: function $add(input) {
+      this.input = input
+      this.index = 0
     },
-    { // provide properties we'll use
-      index: {
-        value: 0,
-        writable: true,
-        enumerable: true,
-        configurable: false,
-      },
-      input: {
-        value: null,
-        writable: true,
-        enumerable: true,
-        configurable: false,
-      },
-      value: {
-        value: { ch: null, count: 0 },
-        writable: false,
-        enumerable: true,
-        configurable: false,
-      }
-    }
-  )
-})
+    trim: require('../../../lib/string-input').trim
+  },
+  { // provide properties we'll use
+    index: prop(0, true),
+    input: prop(null, true),
+    value: prop({ ch: null, count: 0 }, false)
+  }
+)
+
+var executor = nodes.strings({ context: context })
 
 var input = (function() {
   var index = process.argv.indexOf('--input')
@@ -113,7 +102,7 @@ var input = (function() {
 
 if (input) {
 
-  executor.process(input)
+  console.log(executor.process(input))
 
 } else {
 
