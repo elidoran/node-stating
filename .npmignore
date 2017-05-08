@@ -4,6 +4,7 @@
 .gitignore
 
 benchmark/
+build/
 coverage/
 docs/
 examples/
