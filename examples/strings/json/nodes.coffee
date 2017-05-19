@@ -58,61 +58,44 @@ F = 'f'.charCodeAt 0
 A = 'a'.charCodeAt 0
 S = 's'.charCodeAt 0
 
+# TODO:
+#  when building up a string to use
+#  instead of concatenating the parts when we have to wait
+#  build up an array of individual strings.
+#  then join() them when we have them all.
+
+# TODO:
+#  check strings to see if they are encoded Date values
 
 module.exports =
 
-  start: (direct) ->
-
-    value = send = start = null
-
-    direct [ 'value', 'send', 'start' ], (v, se, st) ->
-      value = v
-      send  = se
-      start = st
-
-    (control) -> control.next value, send, start
+  start: (control, $) -> control.next $.value, $.send, $.start
 
 
-  send: (direct) -> (control) ->
+  send: (control) ->
     value = @value
     @value = null
     control.result if value is NIL then null else value
     control.next()
 
 
-  value: (direct) ->
-
-    pair = element = notQuote = stringValue = number = $true = $false = nil = null
-
-    direct [
-      'pair', 'element', '!"', 'stringValue','number', 'true', 'false', 'nil'
-    ], (p, e, nq, sv, n, t, f, nl) ->
-      pair = p
-      element = e
-      notQuote = nq
-      stringValue = sv
-      number = n
-      $true = t
-      $false = f
-      nil = nl
-
-    (control) ->
+  value: (control, $) ->
 
       switch @code()
 
         when LEFT_BRACE
           @next() # increment by at least one, consume space
           @pushObject()
-          control.next pair#, rightBrace # TODO: shorten as i did with array...
+          control.next $.pair#, rightBrace # TODO: shorten as i did with array...
 
         when LEFT_BRACKET
           @next() # increment by at least one, consume space
           @pushArray()
-          control.next element
+          control.next $.element
 
         when DOUBLE_QUOTE
           @index++
-          control.next notQuote, stringValue
+          control.next $.notQuote, $.stringValue
 
         # stopped enforcing perfectly valid number format.
         # grab a glob of characters allowed in a number at least once
@@ -124,62 +107,62 @@ module.exports =
         when PLUS
           @string = ''
           @index++
-          control.next number
+          control.next $.number
 
         when MINUS
           @string = '-'
           @index++
-          control.next number
+          control.next $.number
 
         when ZERO
           @index++
           @string = '0'
-          control.next number
+          control.next $.number
 
         when ONE
           @string = '1'
           @index++
-          control.next number
+          control.next $.number
 
         when TWO
           @string = '2'
           @index++
-          control.next number
+          control.next $.number
 
         when THREE
           @string = '3'
           @index++
-          control.next number
+          control.next $.number
 
         when FOUR
           @string = '4'
           @index++
-          control.next number
+          control.next $.number
 
         when FIVE
           @string = '5'
           @index++
-          control.next number
+          control.next $.number
 
         when SIX
           @string = '6'
           @index++
-          control.next number
+          control.next $.number
 
         when SEVEN
           @string = '7'
           @index++
-          control.next number
+          control.next $.number
 
         when EIGHT
           @string = '8'
           @index++
-          control.next number
+          control.next $.number
 
         when NINE
           @string = '9'
           @index++
-          control.next number
+          control.next $.number
 
 
         when T
@@ -191,7 +174,7 @@ module.exports =
             control.next()
 
           else
-            control.next $true # TODO: change next node to 'rue'
+            control.next $.true # TODO: change next node to 'rue'
 
         when F
 
@@ -202,7 +185,7 @@ module.exports =
             control.next()
 
           else
-            control.next $false # TODO: change next node to 'alse'
+            control.next $.false # TODO: change next node to 'alse'
 
         when N
 
@@ -213,28 +196,24 @@ module.exports =
             control.next()
 
           else
-            control.next nil # TODO: change next node to 'ull'
+            control.next $.nil # TODO: change next node to 'ull'
 
-        else control.fail 'invalid character'
+        else
+          console.log 'invalid char:', @input[@index], @code(), N
+          control.fail 'invalid character'
 
 
-  string: (direct) ->
-
-    notQuote = null
-
-    direct [ '!"' ], (nq) -> notQuote = nq
-
-    (control) ->
+  string: (control, $) ->
 
       if @consumeSpace() and @empty() then control.wait 'wait in string'
 
       else if @code() is DOUBLE_QUOTE
         @index++
-        control.next notQuote
+        control.next $.notQuote
 
       else control.fail 'double quote required'
 
-  '!"': (direct) -> (control) ->
+  notQuote: (control) ->
 
     if @empty() then return control.wait 'wait in !"'
 
@@ -266,7 +245,7 @@ module.exports =
       control.wait 'wait in !"'
 
 
-  stringValue: (direct) -> (control) ->
+  stringValue: (control) ->
 
     if @string?
       @value = @string
@@ -276,7 +255,7 @@ module.exports =
     else control.fail 'incomplete string'
 
 
-  number: (direct) -> (control) ->
+  number: (control) ->
 
     if @empty() then return control.wait 'wait in number'
 
@@ -296,7 +275,7 @@ module.exports =
       @index = @input.length
       control.wait 'wait in number'
 
-  true: (direct) -> (control) ->
+  true: (control) ->
 
     unless @has 4 then return control.wait 'wait in true'
 
@@ -310,7 +289,7 @@ module.exports =
     control.next()
 
 
-  false: (direct) -> (control) ->
+  false: (control) ->
 
     unless @has 5 then return control.wait 'wait in false'
 
@@ -325,7 +304,7 @@ module.exports =
     control.next()
 
 
-  nil: (direct) -> (control) ->
+  nil: (control) ->
 
     unless @has 4 then return control.wait 'wait in nil'
 
@@ -339,17 +318,7 @@ module.exports =
     control.next()
 
 
-  pair: (direct) ->
-
-    string = key = value = pairComma = null
-
-    direct [ 'string', 'key', 'value', 'pair ,' ], (s, k, v, p) ->
-      string = s
-      key = k
-      value = v
-      pairComma = p
-
-    (control) ->
+  pair: (control, $) ->
 
       if @code() is RIGHT_BRACE
 
@@ -361,15 +330,10 @@ module.exports =
 
         else control.fail '\'}\' without object'
 
-      else control.next string, key, value, pairComma
+      else control.next $.string, $.key, $.value, $.pairComma
 
 
-  key: (direct) ->
-
-    colon = null
-    direct [ ':' ], (c) -> colon = c
-
-    (control) ->
+  key: (control, $) ->
 
       if @string?
         @key = @string  # NOTE: @pushObject() handles recursion for @key
@@ -381,12 +345,12 @@ module.exports =
           control.next()
 
         # else go to the colon node
-        else control.next colon
+        else control.next $.colon
 
       else control.fail 'string required for key'
 
 
-  ':': (direct) -> (control) ->
+  'colon': (control) ->
 
     if @consumeSpace() and @empty() then control.wait 'wait for colon'
 
@@ -398,17 +362,7 @@ module.exports =
       control.fail '\':\' required'
 
 
-  'pair ,': (direct) ->
-
-    string = key = value = pairComma = null
-
-    direct [ 'string', 'key', 'value', 'pair ,' ], (s, k, v, p) ->
-      string = s
-      key = k
-      value = v
-      pairComma = p
-
-    (control) ->
+  'pairComma': (control, $) ->
 
       if @consumeSpace() and @empty() then return control.wait 'wait in "pair ,"'
 
@@ -424,7 +378,7 @@ module.exports =
 
         when COMMA
           @next() # increment by at least one, consume space
-          control.next string, key, value, pairComma
+          control.next $.string, $.key, $.value, $.pairComma
 
         # handle right brace here
         when RIGHT_BRACE
@@ -441,15 +395,7 @@ module.exports =
 
 
   # an element is any value, push into array, check for comma for more
-  element: (direct) ->
-
-    value = elementComma = null
-
-    direct [ 'value', 'element ,' ], (v, e) ->
-      value = v
-      elementComma = e
-
-    (control) ->
+  element: (control, $) ->
 
       @consumeSpace()
 
@@ -465,16 +411,10 @@ module.exports =
 
         else return control.fail '\']\' without array'
 
-      else control.next value, elementComma
+      else control.next $.value, $.elementComma
 
 
-  'element ,': (direct) ->
-
-    elementComma = value = null
-
-    direct [ 'element ,', 'value' ], (e, v) -> elementComma = e ; value = v
-
-    (control) ->
+  elementComma: (control, $) ->
 
       @consumeSpace()
 
@@ -484,7 +424,7 @@ module.exports =
       element = @value
       @value = null
 
-      if value?
+      if element?
         @array[@array.length] = if element is NIL then null else element
 
       else
@@ -495,7 +435,7 @@ module.exports =
 
         when COMMA
           @next() # increment by at least one, consume space
-          control.next value, elementComma # element
+          control.next $.value, $.elementComma # element
 
         when RIGHT_BRACKET
           @next()

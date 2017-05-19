@@ -5,7 +5,7 @@ console.log('example transforms/math')
 
 nodes.addAll({
 
-  start: function start(control) {
+  start: function start(control, N) {
     if (!this.input) {
       // transform pipes to process.stdout
       // so this will be output to the console.
@@ -13,50 +13,52 @@ nodes.addAll({
     }
 
     else if (this.input.op) {
-      control.next('op')
+      control.next(N.op)
     }
 
     else if (this.input.value) {
-      control.next('value')
+      control.next(N.value)
     }
 
     else {
       this.error = 'unknown input'
-      control.next('error')
+      control.next(N.error)
     }
   },
 
-  isOverwrite: function isOverwrite(control) {
+  isOverwrite: function isOverwrite(control, N) {
     if (this.op) {
       this.error = 'overwriting op'
-      control.next('error')
+      control.next(N.error)
     } else {
       control.next()
     }
   },
 
-  op: function op(control) {
+  op: function op(control, N) {
     this.op = this.input.op
     this.input = null
     control.next()
   },
 
-  value: function value(control) {
+  value: function value(control, N) {
     this.values = this.values || []
     this.values.push(this.input.value)
     this.input = null
     control.next()
   },
 
-  'ready?': function isReady(control) {
+  'ready?': function isReady(control, N) {
     if (this.op && this.values && this.values.length > 1) {
-      control.next('calculate')
+      control.next(N.calculate)
     } else {
-      control.next('start')
+      control.next(N.start)
     }
   },
 
-  calculate: function calculate(control, context) {
+  // example of when `context` arg is helpful:
+  // us it in a closure where `this` is no longer `context`.
+  calculate: function calculate(control, N, context) {
     var result = this.values.reduce(function(acc, el) {
       if (acc) {
         return context.op(acc, el)
@@ -64,8 +66,8 @@ nodes.addAll({
         return el
       }
     })
-    context.$push('result = ' + result + '\n')
-    control.next('start')
+    this.$push('result = ' + result + '\n')
+    control.next(N.start)
   },
 
   reset: function reset(control) {

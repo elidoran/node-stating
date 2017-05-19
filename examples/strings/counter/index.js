@@ -6,10 +6,10 @@ console.log('example strings/counter\n------------------------------------------
 // add our two nodes
 nodes.addAll({
 
-  count: function count(control) {
+  count: function count(control, N) {
 
     if (!this.input || this.input.length < 1) {
-      return control.next(this.value.count > 0 ? 'use' : 'stop')
+      return control.next(this.value.count > 0 ? N.use : N.stop)
     } else {
       this.input = this.trim(0, this.input.length - 1)
     }
@@ -37,11 +37,11 @@ nodes.addAll({
     if (index >= this.input.length) {
       control.wait()
     } else {
-      control.next('use')
+      control.next(N.use)
     }
   },
 
-  use: function use(control, context) {
+  use: function use(control, N, context) {
 
     // use our value
     console.log(context.value.ch, '->', context.value.count)
@@ -51,13 +51,13 @@ nodes.addAll({
     this.value.count = 0
 
     // go back to count another character
-    control.next('count')
+    control.next(N.count)
   },
 
-  stop: function stop(control) {
+  stop: function stop(control, N) {
 
     if (this.input && this.input.length > 0) {
-      control.next('count')
+      control.next(N.count)
     } else {
       control.wait()
     }

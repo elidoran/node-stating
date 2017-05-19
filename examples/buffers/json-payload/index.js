@@ -10,21 +10,21 @@ console.log('example buffers/json')
 // first added will be the start node.
 // this decodes a length header specifying the number
 // of bytes in the following JSON content.
-nodes.add('header', function header(control) {
+nodes.add('header', function header(control, N) {
 
   if ((this.input.length - this.index) < 4) {
     control.wait()
   } else {
     this.contentLength = this.input.readUInt32BE(this.index)
     this.index += 4
-    control.next('content')
+    control.next(N.content)
   }
 
 })
 
 // this gathers buffers until it has enough to extract
 // the JSON content; according to length header.
-nodes.add('content', function content(control) {
+nodes.add('content', function content(control, N) {
 
   if (this.buffers
       && (this.buffersLength + this.input.length >= this.contentLength)) {
@@ -34,13 +34,13 @@ nodes.add('content', function content(control) {
     this.content = Buffer.concat(this.buffers)
     this.buffers = null
     this.buffersLength = 0
-    control.next('parse', 'header')
+    control.next(N.parse, N.header)
   }
 
   else if ((this.index + this.contentLength) <= this.input.length) {
     this.content = this.input.slice(this.index, this.index + this.contentLength)
     this.index += this.contentLength
-    control.next('parse', 'header')
+    control.next(N.parse, N.header)
   }
 
   else {
@@ -55,14 +55,14 @@ nodes.add('content', function content(control) {
 })
 
 // once content is availble we parse the JSON.
-nodes.add('parse', function parse(control) {
+nodes.add('parse', function parse(control, N) {
   this.value = JSON.parse(this.content)
   this.content = null
-  control.next('report')
+  control.next(N.report)
 })
 
 // report it
-nodes.add('report', function report(control) {
+nodes.add('report', function report(control, N) {
   console.log('report:\n  ', this.value)
   this.value = null
   control.next()

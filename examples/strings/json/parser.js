@@ -13,9 +13,6 @@ states.addAll(nodes, true)
 // ensure we start at 'start'
 states.start('start')
 
-// now make node use direct instead of via names.
-states.direct()
-
 // create a strings executor with our custom context
 executor = states.strings({
   context: context
