@@ -63,9 +63,9 @@ module.exports = class Control
 
   next: ->
 
-    names = new Array arguments.length
+    nodes = new Array arguments.length
     # NOTE: we're reversing the array as we assign it into `names`
-    names[arguments.length - 1 - i] = arguments[i] for i in [0 ... arguments.length]
+    nodes[arguments.length - 1 - i] = arguments[i] for i in [0 ... arguments.length]
 
     # local alias
     next = @_next
@@ -74,7 +74,7 @@ module.exports = class Control
     next.pop()
 
     # push the specified next names in reverse order onto the next 'stack'.
-    if names.length > 0 then next.push.apply next, names
+    if nodes.length > 0 then next.push.apply next, nodes
 
     # then do the same for the after names so they'll be done *before* the next() ones.
     if @_after?.length > 0 then next.push.apply next, @_after
