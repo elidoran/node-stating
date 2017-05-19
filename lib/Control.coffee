@@ -1,3 +1,5 @@
+StatingError = require('./error')
+
 NIL = {}
 module.exports = class Control
 
@@ -6,19 +8,13 @@ module.exports = class Control
     @_context = options?.context ? Object.create options?.baseContext ? null
 
     # start may be overridden by options, otherwise get it from `stating`
-    @_start = options?.start ? stating._start
-
-    # if direct then get the actual start node
-    @_start = stating.nodes[@_start] if options?.direct
+    @_start = options?.start ? stating.nodes[stating._start]
 
     # the queue, _next, begins with only our start node
     @_next = [ @_start ]
     @_nodes = stating.nodes
 
     @_beforesAdded = []
-    @_prepareNext =
-      if options?.direct is true then Control.prototype._prepareByNode
-      else Control.prototype._prepareByName
 
     @_node = null
     @_after = null
@@ -38,17 +34,22 @@ module.exports = class Control
     @_context.$clear?()
 
 
-  fail: (reason, error) ->
+  fail: (error, details) ->
+
+    if typeof error is 'string' then error = new StatingError error, details
+
+    # copy details properties onto Error
+    else if details?
+      error[key] = value for key, value of details
+
     context =
       if typeof @_context.$copy is 'function' then @_context.$copy()
       else Object.assign {}, @_context
 
-    @_failed =
-      reason : reason
-      node   : @_node
-      context: context
+    error.node = @_node
+    error.context = context
 
-    if error? then @_failed.error = error
+    @_failed = error
     return
 
   next: ->
@@ -93,6 +94,11 @@ module.exports = class Control
 
     @_context.$add data
 
+    # TODO:
+    # set a single result object for result/wait/fail,
+    # then, test for the one result object and return it.
+    # returning a null value as the result makes this tough.
+
     loop # the main processing loop. checks if it has input then calls next
 
       # 1. if we should wait for input, remove the marker and then return/done
@@ -126,45 +132,15 @@ module.exports = class Control
 
 
   _call: (node) ->
-    unless node? then return
-    try # TODO: stop providing the `this` and instead do: node this, @_context
-      node.call @_context, this, @_context
+    unless node? then return @fail 'no next node to call'
+
+    try
+      node.call @_context, this, @_nodes, @_context
     catch error
-      @fail 'Caught error', error
-
-  _prepareByName: ->
-
-    next = @_next
-
-    # get our next node's name. don't pop() until next() is called.
-    console.log
-    nodeName = next[next.length - 1]
-    node = @_nodes[nodeName]
-
-    # without a next node, send an error
-    # unless node? then return done {error:'Missing next node: ' + nodeName}, null
-    unless node? then return @fail 'missing next node: ' + nodeName
-
-    # if the `node` has `before` nodes, then, add them to do first.
-    # remember adding its 'before' names so we do it once.
-    # they're stored in a stack so it gets pop()'d off when we get back to it.
-    if node.before?.length > 0
-
-      if @_beforesAdded[@_beforesAdded.length - 1] is node
-        @_beforesAdded.pop()
-
-      else
-        @_beforesAdded.push node
-        next.push.apply next, node.before
-        nodeName = next[next.length - 1]
-        node = @_nodes[nodeName]
-
-    @_node = node
-    @_after = node.after
-    return node
+      @fail error
 
 
-  _prepareByNode: ->
+  _prepareNext: ->
 
     next = @_next
 
@@ -172,8 +148,7 @@ module.exports = class Control
     node = next[next.length - 1]
 
     # without a next node, send an error
-    # unless node? then return done {error:'Missing next node'}, null
-    unless node? then return @fail 'missing next node'
+    unless node? then return @fail 'no next node'
 
     # if the `node` has `before` nodes, then, add them to do first.
     # remember adding its 'before' names so we do it once.
