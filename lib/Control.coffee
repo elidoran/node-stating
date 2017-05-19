@@ -10,20 +10,18 @@ module.exports = class Control
     @_start = options?.start ? stating.nodes[stating._start]
 
     # the queue, _next, begins with only our start node
-    @_next = [ @_start ]
     @_nodes = stating.nodes
-
-    @_beforesAdded = []
 
     @_node = null
     @_after = null
     @_result = null
     @_error = null
+    @_beforesAdded = []
     @_loop = true
+    @_next = [ @_start ]
 
 
   _reset: ->
-    @_failed = null
     @_node = null
     @_after = null
     @_result = null
