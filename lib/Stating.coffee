@@ -13,7 +13,7 @@ module.exports = class Stating
   start: (name) -> @_start = name
 
 
-  add: (id, node, init) ->
+  add: (id, node) ->
 
     if typeof id is 'function'
       node = id
@@ -23,58 +23,60 @@ module.exports = class Stating
     unless typeof id is 'string' then return error:'must specify an `id`'
 
     @nodes[id] = node
+    node.id ?= id
 
     # first node added is the start by default...
     @_start ?= id
 
-    if init is true then node.$IS_INIT = true
-
     return this
 
 
-  addAll: (object, init) ->
+  addAll: (object) ->
     for own id, node of object
       unless typeof node is 'function'
         return error:'must specify a function', id:id
       @nodes[id] = node
+      node.id ?= id
       @_start ?= id
-      if init is true then node.$IS_INIT = true
 
 
   #   builder.before('a', 'b').run('c', 'd')
   before: ->
     # optimization friendly method (splats use slice which isn't)
-    names = new Array arguments.length
-    names[i] = arguments[i] for i in [0 ... arguments.length]
-    run: @_before.bind this, flatten names
+    nodes = new Array arguments.length
+    nodes[i] = @nodes[arguments[i]] for i in [0 ... arguments.length]
+    run: @_before.bind this, flatten nodes
 
 
   #   builder.after('a', 'b').run('c', 'd')
   after : ->
     # optimization friendly method (splats use slice which isn't)
-    names = new Array arguments.length
-    names[i] = arguments[i] for i in [0 ... arguments.length]
-    run: @_after.bind this, flatten names
+    nodes = new Array arguments.length
+    for i in [0 ... arguments.length]
+      nodes[i] = @nodes[arguments[i]]
+    run: @_after.bind this, flatten nodes
 
 
   # helper used by before()
-  _before: (names) ->
-    beforeNames = new Array arguments.length - 1
+  _before: (nodes) ->
+    beforeNodes = new Array arguments.length - 1
     # reverse them as we copy them into the array
-    beforeNames[arguments.length - 1 - i] = arguments[i] for i in [1 ... arguments.length]
-    @_insert 'before', names, flatten beforeNames
+    for i in [1 ... arguments.length]
+      beforeNodes[arguments.length - 1 - i] = @nodes[arguments[i]]
+    @_insert 'before', nodes, flatten beforeNodes
 
 
   # helper used by after()
-  _after : (names) ->
-    afterNames = new Array arguments.length - 1
+  _after : (nodes) ->
+    afterNodes = new Array arguments.length - 1
     # reverse them as we copy them into the array
-    afterNames[arguments.length - 1 - i] = arguments[i] for i in [1 ... arguments.length]
-    @_insert 'after', names, flatten afterNames
+    for i in [1 ... arguments.length]
+      afterNodes[arguments.length - 1 - i] = @nodes[arguments[i]]
+    @_insert 'after', nodes, flatten afterNodes
 
 
   # helper used by _before() and _after()
-  _insert: (which, names, others) ->
+  _insert: (which, nodes, others) ->
 
     # NOTE: `others` has already been reversed.
     # they're specified forward so it's readable and makes sense.
@@ -82,12 +84,10 @@ module.exports = class Stating
     # the proper order: LIFO
 
     # for each node to add the 'others' to...
-    for name in names
+    for node in nodes
 
-      # get the node
-      node = @nodes[name]
-
-      unless node? then return error: 'unknown node name', name: name
+      unless typeof node is 'function'
+        return error: 'invalid node', node: node
 
       # if the array exists already, splice these into the end
       array = node[which]
@@ -106,9 +106,6 @@ module.exports = class Stating
 
     unless options.context?
       options.baseContext ?= require(contexter).baseContext
-
-    # if we're in direct mode then tell Control...
-    if @_direct is true then options.direct = true
 
     control = new Control this, options
 
@@ -148,14 +145,14 @@ module.exports = class Stating
         # otherwise, we can conditionally set the baseContext for them.
         options.baseContext ?= require('./string-input').baseContext
 
-    # if we're in direct mode then tell Control...
-    if @_direct is true then options.direct = true
-
     # create the Control to use
     control = new Control this, options
 
     # define the transform() using the Control
-    transformOptions.transform = (data, _, next) -> control._process data, next
+    transformOptions.transform = (data, _, next) ->
+      # don't pass on a `result` when wait() sends its wait reason...
+      # only pass on an `error`
+      control._process data, (error) -> next error
 
     # create the Transform
     transform = new require('stream').Transform transformOptions
@@ -181,47 +178,3 @@ module.exports = class Stating
 
       else if options.events isnt false
         control.events = options.events
-
-  # changes from referring to nodes by string (ID)
-  # to referring to the nodes directly.
-  direct: ->
-
-    callbacks = []
-    direct = (ids, callback) -> callbacks.push [ ids, callback ]
-
-    # phase 1: replace all initializers with their nodes
-    for id, node of @nodes
-
-      # replace initializers with the result of running them
-      if node.$IS_INIT is true
-        # replace it
-        @nodes[id] = node direct
-        # remember the id
-        @nodes[id].id = id
-        # copy over the before/after node refs
-        @nodes[id].before = node.before if node.before?
-        @nodes[id].after  = node.after if node.after?
-
-
-    # phase 2: provide the nodes via their callbacks
-    for i in [0 ... callbacks.length]
-
-      [ids, callback] = callbacks[i]
-
-      # replace the desired ids with the actual nodes
-      ids[i] = @nodes[id] for id, i in ids
-
-      # call the callback with the desired nodes
-      callback.apply null, ids
-
-    # phase 3: replace the id's in before/after with the nodes
-    for id, node of @nodes
-
-      # replace before/after names with nodes their actual nodes
-      if node.before? then node.before[i] = @nodes[id2] for id2, i in node.before
-      if node.after?  then node.after[i]  = @nodes[id2] for id2, i in node.after
-
-    # remember we're in "direct mode".
-    @_direct = true
-
-    return
