@@ -13,7 +13,6 @@ module.exports = class Control
     @_nodes = stating.nodes
 
     @_node = null
-    @_after = null
     @_result = null
     @_error = null
     @_beforesAdded = []
@@ -23,7 +22,6 @@ module.exports = class Control
 
   _reset: ->
     @_node = null
-    @_after = null
     @_result = null
     @_error = null
     @_beforesAdded = []
@@ -78,7 +76,7 @@ module.exports = class Control
     if nodes.length > 0 then next.push.apply next, nodes
 
     # then do the same for the after names so they'll be done *before* the next() ones.
-    if @_after?.length > 0 then next.push.apply next, @_after
+    if @_node.after?.length > 0 then next.push.apply next, @_node.after
 
     return
 
@@ -129,7 +127,7 @@ module.exports = class Control
     unless node? then return @fail 'no next node'
 
     # if the `node` has `before` nodes, then, add them to do first.
-    # remember adding its 'before' names so we do it once.
+    # remember adding it so we do it once.
     # they're stored in a stack so it gets pop()'d off when we get back to it.
     if node.before?.length > 0
 
@@ -138,10 +136,8 @@ module.exports = class Control
 
       else
         @_beforesAdded.push node
-        # @_next.splice @_next.length, 0, @_node.before
         next.push.apply next, node.before
         node = next[next.length - 1]
 
     @_node = node
-    @_after = node.after
     return node
