@@ -52,6 +52,15 @@ module.exports = class Control
     @_failed = error
     return
 
+  wait: (info) ->
+    @waiting = info ? 'waiting'
+    return
+
+  # must use separate result var because result can be `null`
+  result: (value) ->
+    @_result = value ? NIL
+    return
+
   next: ->
 
     names = new Array arguments.length
@@ -70,15 +79,6 @@ module.exports = class Control
     # then do the same for the after names so they'll be done *before* the next() ones.
     if @_after?.length > 0 then next.push.apply next, @_after
 
-    return
-
-  wait: (info) ->
-    @waiting = info ? 'waiting'
-    return
-
-  # must use separate result var because result can be `null`
-  result: (value) ->
-    @_result = value ? NIL
     return
 
   _process: (data, done) ->
