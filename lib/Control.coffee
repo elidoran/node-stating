@@ -1,6 +1,5 @@
 StatingError = require('./error')
 
-NIL = {}
 module.exports = class Control
 
   constructor: (stating, options) ->
@@ -62,7 +61,7 @@ module.exports = class Control
   # must use separate result var because result can be `null`
   result: (value) ->
     @_loop = false # stop processing
-    @_result = value ? NIL
+    @_result = value
     return
 
   next: ->
@@ -109,7 +108,7 @@ module.exports = class Control
     # if they provided the callback then we're giving them the info as usual.
     # if they didn't, then it's the placeholder which returns either
     # the error, if it exists, or the result.
-    done @_error, if @_result is NIL then null else @_result
+    done @_error, @_result
 
 
   _call: (node) ->
