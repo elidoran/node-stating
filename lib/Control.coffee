@@ -18,23 +18,25 @@ module.exports = class Control
 
     @_node = null
     @_after = null
-    @_failed = null
-    @waiting = null
     @_result = null
+    @_error = null
+    @_loop = true
 
 
   _reset: ->
     @_failed = null
     @_node = null
     @_after = null
-    @waiting = null
     @_result = null
+    @_error = null
     @_beforesAdded = []
     @_next = [ @_start ]
     @_context.$clear?()
 
 
   fail: (error, details) ->
+
+    @_loop = false # stop processing
 
     if typeof error is 'string' then error = new StatingError error, details
 
@@ -49,15 +51,17 @@ module.exports = class Control
     error.node = @_node
     error.context = context
 
-    @_failed = error
+    @_error = error
     return
 
   wait: (info) ->
-    @waiting = info ? 'waiting'
+    @_loop = false # stop processing
+    @_result = info ? 'waiting'
     return
 
   # must use separate result var because result can be `null`
   result: (value) ->
+    @_loop = false # stop processing
     @_result = value ? NIL
     return
 
@@ -94,41 +98,18 @@ module.exports = class Control
 
     @_context.$add data
 
-    # TODO:
-    # set a single result object for result/wait/fail,
-    # then, test for the one result object and return it.
-    # returning a null value as the result makes this tough.
+    @_loop = true
+    @_error = @_result = null  # ensure we don't have stored result/error
 
-    loop # the main processing loop. checks if it has input then calls next
+    # the main processing loop. gets next node and calls it.
+    # NOTE: isolates the try-catch in its own function because only the newest
+    # node versions can optimize a function with a try-catch.
+    @_call @_nextNode() while @_loop  # reset it to true at start
 
-      # 1. if we should wait for input, remove the marker and then return/done
-      if @waiting?
-        result = @waiting
-        @waiting = null
-        return done null, result
-
-      # 2. if we want to return a result, remove the marker and then return/done
-      # NOTE:
-      #  this supports repeated sycnchronous calls to retrieve one value at
-      #  a time. the main goal of `stating` is processing of chunks which
-      #  can provide many values via a different outlet than the sycnchronous
-      #  return value. but, it's useful for dev/testing/perf to do this too.
-      if @_result?
-        result = if @_result is NIL then null else @_result
-        @_result = null
-        return done null, result
-
-      # 3. if we @_failed then tell done() and return
-      if @_failed?
-        result = @_failed
-        @_failed = null
-        # reset everything so we can start over.
-        @_reset()
-        # the `_failed` has the context in it for them.
-        return done result
-
-      # 4. get the next node and call it
-      @_call @_prepareNext done
+    # if they provided the callback then we're giving them the info as usual.
+    # if they didn't, then it's the placeholder which returns either
+    # the error, if it exists, or the result.
+    done @_error, if @_result is NIL then null else @_result
 
 
   _call: (node) ->
@@ -140,7 +121,7 @@ module.exports = class Control
       @fail error
 
 
-  _prepareNext: ->
+  _nextNode: ->
 
     next = @_next
 
