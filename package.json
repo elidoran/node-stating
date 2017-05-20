@@ -9,7 +9,8 @@
     "lib/Control.js",
     "lib/object-input.js",
     "lib/buffer-input.js",
-    "lib/string-input.js"
+    "lib/string-input.js",
+    "lib/error.js"
   ],
   "keywords": [
     "generate",
