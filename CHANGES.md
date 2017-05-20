@@ -1,3 +1,7 @@
+## 0.4.1 - 2017/05/20
+
+1. add missing `error.js` file (didn't put it in package.json, woops)
+
 ## 0.4.0 - 2017/05/19
 
 1. removed hideous "direct nodes" stuff in favor of providing an arg which is an object containing all nodes.
