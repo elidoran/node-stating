@@ -1,3 +1,7 @@
+builder = require('@stating/builder')({
+  load: [ '@stating/string-plugin' ]
+})
+
 # Escape implementation adapted from Parsimmon. https://github.com/jneen/parsimmon
 ESCAPE_REGEX = /\\(u[0-9a-fA-F]{4}|[^u])/
 ESCAPES = Object.create null,
@@ -275,47 +279,10 @@ module.exports =
       @index = @input.length
       control.wait 'wait in number'
 
-  true: (control) ->
 
-    unless @has 4 then return control.wait 'wait in true'
-
-    unless @code() is T then return control.fail '\'t\' required for true'
-    unless @ch(1)  is R then return control.fail '\'r\' required for true'
-    unless @ch(2)  is U then return control.fail '\'u\' required for true'
-    unless @ch(3)  is E then return control.fail '\'e\' required for true'
-
-    @to @index + 4
-    @value = true
-    control.next()
-
-
-  false: (control) ->
-
-    unless @has 5 then return control.wait 'wait in false'
-
-    unless @code() is F then return control.fail '\'f\' required for false'
-    unless @ch(1)  is A then return control.fail '\'a\' required for false'
-    unless @ch(2)  is L then return control.fail '\'l\' required for false'
-    unless @ch(3)  is S then return control.fail '\'s\' required for false'
-    unless @ch(4)  is E then return control.fail '\'e\' required for false'
-
-    @to @index + 5
-    @value = false
-    control.next()
-
-
-  nil: (control) ->
-
-    unless @has 4 then return control.wait 'wait in nil'
-
-    unless @code() is N then return control.fail '\'n\' required for null'
-    unless @ch(1)  is U then return control.fail '\'u\' required for null'
-    unless @ch(2)  is L then return control.fail '\'l\' required for null'
-    unless @ch(3)  is L then return control.fail '\'l\' required for null'
-
-    @to @index + 4
-    @value = NIL
-    control.next()
+  true : builder.string 'true' , -> @to @index + 4 ; @value = true  ; control.next()
+  false: builder.string 'false', -> @to @index + 5 ; @value = false ; control.next()
+  nil  : builder.string 'null' , -> @to @index + 4 ; @value = NIL   ; control.next()
 
 
   pair: (control, $) ->
