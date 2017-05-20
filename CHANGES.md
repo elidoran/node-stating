@@ -1,3 +1,14 @@
+## 0.4.0 - 2017/05/19
+
+1. removed hideous "direct nodes" stuff in favor of providing an arg which is an object containing all nodes.
+2. cleaned up the `Control` process loop by using a single loop variable and result/error properties for `result()`, `wait()`, and `fail()`
+3. eliminated some extra internal properties
+4. adapted examples for these changes
+5. changed `fail()` to convert a string into a custom error, `StatingError`, and assign properties on it from a `details` argument to allow extra info. Error message is now in the `message` property, of course, instead of the `error` property like before.
+6. add/fix benchmark inputs with names for ordering
+7. export more inner stuff such as the input helpers and our custom error
+
+
 ## 0.3.0 - 2017/05/07
 
 1. change context's `reset()` to `$add()` to use a less common name
