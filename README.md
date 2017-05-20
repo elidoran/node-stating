@@ -12,6 +12,8 @@ Each node specifies the next node, or nodes, which allows for dynamically specif
 
 It's a malleable state machine. Others may add new nodes at any time, and, it's also possible to add nodes both "before" and "after" other nodes which may override a node or alter where it transitions to.
 
+You may supply a node to run next which hasn't been added to the `stating` instance. Or, provide a function you just generated.
+
 
 ## Install
 
@@ -42,29 +44,29 @@ var buildNodes = require('stating')
 var nodes = buildNodes()
 
 // add a "node", which is a function with an id
-nodes.add('some-id', function (control, context) {
+nodes.add('someId', function (control, N) {
 
   // do something with the @input / context.input
   // it's the object provided to process()
 
   if (/* things are okay, move to the next node */)
-    control.next('next-id')
+    control.next(n.nextId)
   else
     control.fail('there was a problem')
 })
 
-nodes.add('next-id', function (control, context) {
+nodes.add('nextId', function (control, N) {
   // do something ... and then tell it to move back to the first node
-  control.next('some-id')
+  control.next(N.someId)
 })
 
 // Alternate way to add nodes as an object:
 nodes.addAll({
-  someId: function (control, context) {
+  someId: function (control, N) {
     // same as the function used above
   },
 
-  nextId: function (control, context) {
+  nextId: function (control, N) {
     // same as the function used above
   }
 })
@@ -72,7 +74,7 @@ nodes.addAll({
 // first added node is the 'start' node by default.
 //   OR:
 // set it explicitly:
-nodes.start('some-id')
+nodes.start('someId')
 
 // Alter flow with before/after nodes by specifying which nodes should
 // be targeted and which nodes should be applied. works as it reads.
@@ -144,50 +146,6 @@ var options = { events: yourEventEmitter }
 // then create the usual executor with the options...
 var executor = nodes.objects(options)
 var executor = nodes.strings(options)
-
-
-// speed things up by using nodes directly instead of
-// referring to them via their ID's (string).
-// call direct() to replace all string references
-// with the actual nodes.
-// wait until after all nodes have been added.
-nodes.direct()
-
-// also, each node added must be wrapped with an
-// initializer function which, when called,
-// uses the `nodes` argument to get any nodes
-// it wants via ID, and then it returns the actual
-// node function which refers to nodes with the nodes
-// instead of their IDs.
-// tell add() and addAll() they're initializers
-// by specifying `true` as the third argument
-// For example:
-nodes.add('some id', function(direct) {
-  // this is the initializer accepting `direct`.
-
-  // we want these two nodes:
-  var a, b
-
-  // get them like this:
-  // (supports transitive dependencies)
-  direct(['a', 'b'], function(nodeA, nodeB) {
-    a = nodeA
-    b = nodeB
-  })
-
-  // now return the real node using both `a` and `b`
-  return function(control) {
-    if (/* something meaning do `a` */)
-      control.next(a)
-    else // otherwise `b`
-      control.next(b)
-  }
-}, true) // <-- means it's an initializer.
-
-// example with addAll()
-nodes.addAll({
-  // properties are ID's and node initializers
-}, true) // <-- means they're all initializers.
 ```
 
 
@@ -195,16 +153,17 @@ nodes.addAll({
 
 First, finalize how Stating/Control handle nodes and the internal execution queue.
 
-Then, it's all about adding builders/helpers to create the nodes supplied to a Stating instance.
+Then, it's all about adding builders/helpers to create the nodes supplied to a Stating instance. See [@stating/builder](https://www.npmjs.com/package/@stating/builder) for a start.
 
-For example, look at the [JSON example nodes](examples/strings/json/nodes.coffee) for `true`, `false`, and `null`. All that for a static string. I'm sure I could make a builder to help make nodes like that.
+For example, look at the [JSON example nodes](examples/strings/json/nodes.coffee) for `true`, `false`, and `null`. All that for a static string. I'm sure I could make a builder to help make nodes like that. **I did**: [@stating/string-plugin](https://www.npmjs.com/package/@stating/string-plugin).
 
 Also, nodes like the "element" and "element ," for reading an array, which work together as the first and the repeater, could be made via a helper by telling it what is wanted each time and what the separator is.
 
 There's more. I plan to add those later as packages in the `stating` scope.
 
+Feel free to suggest some or contribute some to the scope.
 
-The initializer functions to enable "direct" use of the nodes can be a bit unwieldy for nodes which call `control.next()` with many different nodes. I'd rather something like functions have an object of the node names they use (key is the name which maps to the name) and Stating can replace the value with the actual node when using direct mode (or, always do that, and get rid of direct mode). If you have any ideas, please, feel free to create an Issue and describe it.
+The hideous "initializer functions" thing is gone in 0.4.0. Yay.
 
 
-## [MIT License](LICENSE)
+# [MIT License](LICENSE)
